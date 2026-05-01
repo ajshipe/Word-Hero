@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Elijah's Word Hero</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #0F1B2D;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(76, 201, 240, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(247, 37, 133, 0.15) 0%, transparent 50%),
+      linear-gradient(180deg, #0F1B2D 0%, #1A2942 100%);
+    background-attachment: fixed;
+    font-family: 'Trebuchet MS', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    overflow-x: hidden;
+    touch-action: manipulation;
+    color: #fff;
+  }
+  h1 {
+    color: #FFE45E;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    text-shadow: 3px 3px 0 #6A0DAD, 5px 5px 0 rgba(0,0,0,0.4);
+    margin: 4px 0 8px;
+    text-align: center;
+    letter-spacing: 1.5px;
+    font-weight: 900;
+  }
+  #subtitle {
+    color: #4CC9F0;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    font-weight: bold;
+  }
+  #gameContainer {
+    position: relative;
+    width: min(820px, 96vw);
+    background: #1A2942;
+    border: 4px solid #FFE45E;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 4px #6A0DAD,
+      0 12px 40px rgba(247, 37, 133, 0.3),
+      inset 0 0 60px rgba(76, 201, 240, 0.1);
+    overflow: hidden;
+    padding: 16px;
+  }
+  
+  /* ============ TOP STATS BAR ============ */
+  #statsBar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: linear-gradient(90deg, #6A0DAD, #F72585);
+    border: 3px solid #FFE45E;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stat {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  /* ============ MENU SCREEN ============ */
+  #menuScreen {
+    text-align: center;
+    padding: 20px 0;
+  }
+  #heroIntro {
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  #heroIntro p {
+    color: #fff;
+    font-size: 1rem;
+    margin: 6px 0;
+    line-height: 1.5;
+  }
+  .gameModeButtons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  @media (min-width: 600px) {
+    .gameModeButtons { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  .modeBtn {
+    background: linear-gradient(135deg, #4CC9F0, #4361EE);
+    color: #fff;
+    border: 3px solid #FFE45E;
+    border-radius: 16px;
+    padding: 18px 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 0 #1B2A78, 0 8px 20px rgba(67, 97, 238, 0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+  }
+  .modeBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1B2A78; }
+  .modeBtn .modeIcon { font-size: 2.5rem; display: block; margin-bottom: 6px; }
+  .modeBtn .modeDesc { font-size: 0.8rem; font-weight: normal; margin-top: 4px; opacity: 0.9; }
+  .modeBtn.adventure { background: linear-gradient(135deg, #06D6A0, #118AB2); box-shadow: 0 6px 0 #073B4C, 0 8px 20px rgba(6, 214, 160, 0.4); }
+  .modeBtn.builder { background: linear-gradient(135deg, #F4A261, #E76F51); box-shadow: 0 6px 0 #6F2D1A, 0 8px 20px rgba(244, 162, 97, 0.4); }
+  .modeBtn.runner { background: linear-gradient(135deg, #F72585, #B5179E); box-shadow: 0 6px 0 #560A4D, 0 8px 20px rgba(247, 37, 133, 0.4); }
+  
+  #wordBookBtn, #resetProgressBtn {
+    margin-top: 16px;
+    background: #FFE45E;
+    color: #6A0DAD;
+    border: 3px solid #6A0DAD;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 0 #6A0DAD;
+  }
+  #resetProgressBtn { background: #fff; margin-left: 8px; }
+  
+  /* ============ GAME SCREEN ============ */
+  #gameScreen { display: none; }
+  #gameCanvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    background: #2C3E50;
+    border: 3px solid #FFE45E;
+    border-radius: 12px;
+    display: block;
+  }
+  #gameUI {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 12px;
+    pointer-events: none;
+  }
+  
+  /* ============ WORD CARD UI ============ */
+  #wordPrompt {
+    position: relative;
+    background: linear-gradient(135deg, #fff, #FFE45E);
+    border: 4px solid #6A0DAD;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 12px 0;
+    text-align: center;
+    box-shadow: 0 6px 0 #6A0DAD, 0 0 30px rgba(255, 228, 94, 0.3);
+  }
+  #wordPrompt .promptLabel {
+    color: #6A0DAD;
+    font-size: 0.95rem;
+    font-weight: bold;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  #wordPrompt .promptWord {
+    color: #1A2942;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: 3px;
+    font-family: 'Comic Sans MS', sans-serif;
+    text-shadow: 3px 3px 0 #FFE45E;
+  }
+  #hearWordBtn {
+    background: #4CC9F0;
+    color: white;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #1B2A78;
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+  }
+  #hearWordBtn:active { transform: translateY(-50%) translateY(2px); box-shadow: 0 2px 0 #1B2A78; }
+  
+  /* ============ ANSWER OPTIONS ============ */
+  #answerOptions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .answerBtn {
+    background: linear-gradient(135deg, #fff, #f0f0f0);
+    color: #1A2942;
+    border: 3px solid #4361EE;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    font-weight: 900;
+    font-family: 'Comic Sans MS', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #1B2A78;
+    transition: all 0.15s;
+    letter-spacing: 1px;
+    min-height: 60px;
+  }
+  .answerBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #1B2A78; }
+  .answerBtn.correct {
+    background: linear-gradient(135deg, #06D6A0, #4CC9F0);
+    color: white;
+    animation: correctPulse 0.5s;
+  }
+  .answerBtn.wrong {
+    background: linear-gradient(135deg, #F72585, #ff6b6b);
+    color: white;
+    animation: shake 0.4s;
+  }
+  @keyframes correctPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
+  
+  /* ============ FEEDBACK ============ */
+  #feedback {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin: 8px 0;
+    min-height: 32px;
+  }
+  
+  /* ============ BACK BUTTON ============ */
+  #backBtn {
+    background: #F72585;
+    color: white;
+    border: 3px solid #FFE45E;
+    border-radius: 24px;
+    padding: 8px 18px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 0 #560A4D;
+    margin-top: 12px;
+  }
+  #backBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #560A4D; }
+  
+  /* ============ WORD BOOK MODAL ============ */
+  #wordBookModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  #wordBookModal.show { display: flex; }
+  #wordBookContent {
+    background: #1A2942;
+    border: 4px solid #FFE45E;
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  #wordBookContent h2 {
+    color: #FFE45E;
+    text-align: center;
+    margin-bottom: 12px;
+    text-shadow: 2px 2px 0 #6A0DAD;
+  }
+  .wordGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .wordChip {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid #4CC9F0;
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+    font-weight: bold;
+    color: #fff;
+    font-size: 0.9rem;
+    position: relative;
+  }
+  .wordChip.mastered {
+    background: linear-gradient(135deg, #06D6A0, #118AB2);
+    border-color: #FFE45E;
+    color: #fff;
+  }
+  .wordChip.mastered::after {
+    content: '⭐';
+    position: absolute;
+    top: -8px;
+    right: -4px;
+    font-size: 1rem;
+  }
+  .wordChip .timesCount {
+    display: block;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    font-weight: normal;
+    margin-top: 2px;
+  }
+  #closeWordBookBtn {
+    background: #F72585;
+    color: white;
+    border: 3px solid #FFE45E;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 16px;
+    width: 100%;
+    font-size: 1rem;
+  }
+  
+  /* ============ VICTORY MODAL ============ */
+  #victoryModal {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 27, 45, 0.95);
+    z-index: 50;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+    text-align: center;
+  }
+  #victoryModal.show { display: flex; animation: bounceIn 0.6s; }
+  @keyframes bounceIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  #victoryModal h2 {
+    font-size: clamp(2rem, 6vw, 3rem);
+    color: #FFE45E;
+    text-shadow: 4px 4px 0 #6A0DAD;
+    margin-bottom: 16px;
+    font-weight: 900;
+  }
+  #victoryStats {
+    color: #fff;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    line-height: 1.8;
+  }
+  #playAgainBtn {
+    background: linear-gradient(135deg, #06D6A0, #4CC9F0);
+    color: white;
+    border: 4px solid #FFE45E;
+    border-radius: 30px;
+    padding: 16px 32px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 0 #073B4C;
+    margin: 8px;
+  }
+  #menuFromVictoryBtn {
+    background: #FFE45E;
+    color: #1A2942;
+    border: 4px solid #6A0DAD;
+    border-radius: 30px;
+    padding: 16px 32px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 0 #6A0DAD;
+    margin: 8px;
+  }
+  
+  /* ============ FLOATING STARS ============ */
+  .floatStar {
+    position: absolute;
+    pointer-events: none;
+    font-size: 2rem;
+    animation: floatUp 1.5s ease-out forwards;
+    z-index: 30;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(0.5); opacity: 1; }
+    100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<h1>⚡ ELIJAH'S WORD HERO ⚡</h1>
+<div id="subtitle">Read words to power up your hero!</div>
+
+<div id="gameContainer">
+  <div id="statsBar">
+    <div class="stat">⭐ Stars: <span id="starsCount">0</span></div>
+    <div class="stat">💎 Gems: <span id="gemsCount">0</span></div>
+    <div class="stat">📚 Words: <span id="wordsCount">0/52</span></div>
+  </div>
+
+  <!-- ============ MAIN MENU ============ -->
+  <div id="menuScreen">
+    <div id="heroIntro">
+      <p>🦸 Hi Elijah! Pick your adventure! 🦸</p>
+      <p style="font-size: 0.85rem; opacity: 0.85;">Read the sight words to be a hero! Tap the 🔊 button if you need help.</p>
+    </div>
+    <div class="gameModeButtons">
+      <button class="modeBtn adventure" onclick="startGame('adventure')">
+        <span class="modeIcon">⚔️</span>
+        QUEST MODE
+        <div class="modeDesc">Defeat foes by reading!</div>
+      </button>
+      <button class="modeBtn builder" onclick="startGame('builder')">
+        <span class="modeIcon">🟫</span>
+        BUILD MODE
+        <div class="modeDesc">Build a tower of blocks!</div>
+      </button>
+      <button class="modeBtn runner" onclick="startGame('runner')">
+        <span class="modeIcon">⚡</span>
+        DASH MODE
+        <div class="modeDesc">Speed-read to run fast!</div>
+      </button>
+    </div>
+    <div style="text-align:center;">
+      <button id="wordBookBtn" onclick="openWordBook()">📖 My Word Book</button>
+      <button id="resetProgressBtn" onclick="resetProgress()">🔄 Reset</button>
+    </div>
+  </div>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <div id="gameScreen">
+    <div style="position: relative;">
+      <canvas id="gameCanvas" width="800" height="450"></canvas>
+      <div id="victoryModal">
+        <h2 id="victoryTitle">🏆 YOU DID IT! 🏆</h2>
+        <div id="victoryStats"></div>
+        <div>
+          <button id="playAgainBtn" onclick="restartGame()">▶ Play Again</button>
+          <button id="menuFromVictoryBtn" onclick="goToMenu()">🏠 Home</button>
+        </div>
+      </div>
+    </div>
+    <div id="wordPrompt">
+      <div class="promptLabel" id="promptLabel">CAN YOU READ THIS WORD?</div>
+      <div class="promptWord" id="promptWord">the</div>
+      <button id="hearWordBtn" onclick="speakCurrentWord()" title="Hear the word">🔊</button>
+    </div>
+    <div id="answerOptions"></div>
+    <div id="feedback"></div>
+    <div style="text-align:center;">
+      <button id="backBtn" onclick="goToMenu()">← Back to Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ WORD BOOK MODAL ============ -->
+<div id="wordBookModal">
+  <div id="wordBookContent">
+    <h2>📖 Elijah's Word Book</h2>
+    <p style="text-align:center; color:#4CC9F0; margin-bottom:8px;">⭐ = mastered! Read it 5+ times</p>
+    <div id="wordGrid" class="wordGrid"></div>
+    <button id="closeWordBookBtn" onclick="closeWordBook()">Close</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// KINDERGARTEN DOLCH SIGHT WORDS (52 official words)
+// ============================================================
+const SIGHT_WORDS = [
+  'all', 'am', 'are', 'at', 'ate', 'be', 'black', 'brown', 'but', 'came',
+  'did', 'do', 'eat', 'four', 'get', 'good', 'have', 'he', 'into', 'like',
+  'must', 'new', 'no', 'now', 'on', 'our', 'out', 'please', 'pretty', 'ran',
+  'ride', 'saw', 'say', 'she', 'so', 'soon', 'that', 'there', 'they', 'this',
+  'too', 'under', 'want', 'was', 'well', 'went', 'what', 'white', 'who', 'will',
+  'with', 'yes'
+];
+
+// ============================================================
+// PROGRESS TRACKING (in-memory; persists during session)
+// ============================================================
+let progress = {};
+SIGHT_WORDS.forEach(w => progress[w] = 0);
+
+let stars = 0;
+let gems = 0;
+let currentMode = null;
+let currentWord = '';
+let currentOptions = [];
+let canAnswer = true;
+let gameActive = false;
+
+// Per-game state
+let adventureState = null;
+let builderState = null;
+let runnerState = null;
+
+// ============================================================
+// PERSISTENCE (try storage, fall back gracefully)
+// ============================================================
+async function saveProgress() {
+  try {
+    if (window.storage && window.storage.set) {
+      await window.storage.set('elijah_progress', JSON.stringify({
+        progress, stars, gems
+      }));
+    }
+  } catch(e) {}
+}
+
+async function loadProgress() {
+  try {
+    if (window.storage && window.storage.get) {
+      const result = await window.storage.get('elijah_progress');
+      if (result && result.value) {
+        const data = JSON.parse(result.value);
+        progress = { ...progress, ...data.progress };
+        stars = data.stars || 0;
+        gems = data.gems || 0;
+      }
+    }
+  } catch(e) {}
+  updateStats();
+}
+
+// ============================================================
+// SOUND - Web Audio API for game sounds, SpeechSynthesis for word reading
+// ============================================================
+let audioCtx = null;
+function beep(freq, duration, type = 'square', vol = 0.1) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.value = vol;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+function correctSound() {
+  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.13), i * 70));
+}
+function wrongSound() { beep(220, 0.2, 'sawtooth', 0.1); setTimeout(() => beep(180, 0.2, 'sawtooth', 0.1), 100); }
+function masterSound() {
+  [659, 784, 988, 1175, 1397, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'sine', 0.13), i * 80));
+}
+function popSound() { beep(800, 0.05, 'square', 0.1); }
+function jumpSound() { beep(400, 0.1, 'square', 0.1); setTimeout(() => beep(600, 0.08, 'square', 0.1), 50); }
+function victorySound() {
+  [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.13), i * 100));
+}
+
+function speakCurrentWord() {
+  if (!currentWord) return;
+  if (!('speechSynthesis' in window)) {
+    beep(440, 0.2, 'triangle', 0.15);
+    return;
+  }
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(currentWord);
+  utterance.rate = 0.7;
+  utterance.pitch = 1.1;
+  utterance.volume = 1;
+  // Try to find a friendly voice
+  const voices = speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Google US English'));
+  if (preferred) utterance.voice = preferred;
+  speechSynthesis.speak(utterance);
+}
+
+// Pre-load voices
+if ('speechSynthesis' in window) {
+  speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+}
+
+// ============================================================
+// WORD SELECTION (smart - prefers less-mastered words)
+// ============================================================
+function pickWord() {
+  // 70% chance pick a word with low mastery, 30% pick anything
+  if (Math.random() < 0.7) {
+    const lowMastery = SIGHT_WORDS.filter(w => progress[w] < 5);
+    if (lowMastery.length > 0) {
+      return lowMastery[Math.floor(Math.random() * lowMastery.length)];
+    }
+  }
+  return SIGHT_WORDS[Math.floor(Math.random() * SIGHT_WORDS.length)];
+}
+
+function pickOptions(correctWord, count = 4) {
+  const options = [correctWord];
+  const pool = SIGHT_WORDS.filter(w => w !== correctWord);
+  while (options.length < count) {
+    const candidate = pool[Math.floor(Math.random() * pool.length)];
+    if (!options.includes(candidate)) options.push(candidate);
+  }
+  // shuffle
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+  return options;
+}
+
+// ============================================================
+// QUESTION SYSTEM (used by all 3 modes)
+// ============================================================
+function newQuestion() {
+  // Mix it up: sometimes show the word, sometimes ask "find the word that says X"
+  const askType = Math.random() < 0.5 ? 'read' : 'find';
+  
+  currentWord = pickWord();
+  currentOptions = pickOptions(currentWord, 4);
+  canAnswer = true;
+  
+  const promptLabel = document.getElementById('promptLabel');
+  const promptWord = document.getElementById('promptWord');
+  const optionsContainer = document.getElementById('answerOptions');
+  
+  if (askType === 'read') {
+    promptLabel.textContent = '👀 READ THIS WORD!';
+    promptWord.textContent = currentWord;
+    promptWord.style.fontSize = '';
+    // Options are pictures/icons that match... but we don't have pics.
+    // Better: ask "Did you read it? Tap the matching word"
+    promptLabel.textContent = '👀 TAP THIS SAME WORD!';
+  } else {
+    // Speak word, ask child to pick it
+    promptLabel.textContent = '🔊 TAP THE WORD I SAY!';
+    promptWord.textContent = '???';
+    setTimeout(() => speakCurrentWord(), 300);
+  }
+  
+  optionsContainer.innerHTML = '';
+  currentOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'answerBtn';
+    btn.textContent = opt;
+    btn.onclick = () => handleAnswer(opt, btn);
+    optionsContainer.appendChild(btn);
+  });
+  
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').style.color = '';
+}
+
+function handleAnswer(chosen, btn) {
+  if (!canAnswer) return;
+  canAnswer = false;
+  
+  if (chosen === currentWord) {
+    btn.classList.add('correct');
+    correctSound();
+    progress[currentWord]++;
+    gems++;
+    
+    document.getElementById('feedback').textContent = '🎉 Awesome reading, Elijah! 🎉';
+    document.getElementById('feedback').style.color = '#06D6A0';
+    
+    // Show floating star
+    showFloatingStar(btn);
+    
+    // Check for mastery
+    if (progress[currentWord] === 5) {
+      stars++;
+      masterSound();
+      document.getElementById('feedback').textContent = `⭐ MASTERED "${currentWord}"! ⭐`;
+    }
+    
+    updateStats();
+    saveProgress();
+    
+    // Trigger game-specific reward
+    onCorrectAnswer();
+    
+    setTimeout(() => {
+      if (gameActive) newQuestion();
+    }, 1200);
+  } else {
+    btn.classList.add('wrong');
+    wrongSound();
+    document.getElementById('feedback').textContent = `Almost! That word was "${chosen}". Try again!`;
+    document.getElementById('feedback').style.color = '#F72585';
+    
+    // Show the correct answer briefly
+    setTimeout(() => {
+      document.querySelectorAll('.answerBtn').forEach(b => {
+        if (b.textContent === currentWord) b.classList.add('correct');
+      });
+      document.getElementById('promptWord').textContent = currentWord;
+      document.getElementById('promptLabel').textContent = `📖 The word is "${currentWord}"`;
+      speakCurrentWord();
+    }, 600);
+    
+    // Penalty in game (small)
+    onWrongAnswer();
+    
+    setTimeout(() => {
+      if (gameActive) newQuestion();
+    }, 2500);
+  }
+}
+
+function showFloatingStar(targetBtn) {
+  const star = document.createElement('div');
+  star.className = 'floatStar';
+  star.textContent = ['⭐', '✨', '🌟', '💫'][Math.floor(Math.random()*4)];
+  const rect = targetBtn.getBoundingClientRect();
+  const containerRect = document.getElementById('gameContainer').getBoundingClientRect();
+  star.style.left = (rect.left - containerRect.left + rect.width/2 - 16) + 'px';
+  star.style.top = (rect.top - containerRect.top - 10) + 'px';
+  document.getElementById('gameContainer').appendChild(star);
+  setTimeout(() => star.remove(), 1500);
+}
+
+function updateStats() {
+  document.getElementById('starsCount').textContent = stars;
+  document.getElementById('gemsCount').textContent = gems;
+  const masteredCount = SIGHT_WORDS.filter(w => progress[w] >= 5).length;
+  document.getElementById('wordsCount').textContent = `${masteredCount}/52`;
+}
+
+// ============================================================
+// GAME MODE: ADVENTURE (Quest mode)
+// Hero advances toward foes; correct answer = strike foe
+// ============================================================
+function initAdventure() {
+  adventureState = {
+    heroX: 80,
+    foeX: 700,
+    foesDefeated: 0,
+    targetFoes: 5,
+    foeType: 0,
+    heroJumping: false,
+    heroJumpY: 0,
+    particles: []
+  };
+}
+
+function drawAdventure(ctx) {
+  const W = 800, H = 450;
+  // Sky gradient
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#4CC9F0');
+  sky.addColorStop(0.6, '#90E0EF');
+  sky.addColorStop(0.6, '#06D6A0');
+  sky.addColorStop(1, '#118AB2');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Distant cube mountains (Minecraft-inspired but original)
+  ctx.fillStyle = 'rgba(53, 80, 112, 0.5)';
+  for (let i = 0; i < 6; i++) {
+    const x = i * 150;
+    ctx.fillRect(x, 200, 100, 80);
+    ctx.fillRect(x + 20, 170, 80, 30);
+    ctx.fillRect(x + 40, 150, 40, 20);
+  }
+  
+  // Clouds
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  [{x:100, y:50}, {x:350, y:80}, {x:600, y:60}].forEach(c => {
+    ctx.fillRect(c.x, c.y, 60, 16);
+    ctx.fillRect(c.x+10, c.y-12, 40, 12);
+  });
+  
+  // Ground (cube/voxel style)
+  for (let x = 0; x < W; x += 32) {
+    // Grass top
+    ctx.fillStyle = '#2D8A4F';
+    ctx.fillRect(x, H - 80, 32, 12);
+    ctx.fillStyle = '#3DA864';
+    ctx.fillRect(x + 2, H - 80, 6, 4);
+    ctx.fillRect(x + 18, H - 80, 6, 4);
+    // Dirt
+    ctx.fillStyle = '#8B5A2B';
+    ctx.fillRect(x, H - 68, 32, 68);
+    // Dirt blocks
+    ctx.strokeStyle = '#6B4423';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, H - 68, 32, 32);
+    ctx.strokeRect(x, H - 36, 32, 32);
+    ctx.fillStyle = '#6B4423';
+    ctx.fillRect(x + 4, H - 60, 3, 3);
+    ctx.fillRect(x + 22, H - 50, 3, 3);
+    ctx.fillRect(x + 12, H - 25, 3, 3);
+  }
+  
+  // Progress bar at top
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(20, 20, W - 40, 24);
+  ctx.fillStyle = '#FFE45E';
+  ctx.fillRect(22, 22, (W - 44) * (adventureState.foesDefeated / adventureState.targetFoes), 20);
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Foes: ${adventureState.foesDefeated}/${adventureState.targetFoes}`, W/2, 38);
+  
+  // Hero (Elijah - reddish-blonde hair, blue cape, gold shield)
+  drawHero(ctx, adventureState.heroX, H - 80 - 60 - adventureState.heroJumpY);
+  
+  // Foe
+  drawCubeFoe(ctx, adventureState.foeX, H - 80 - 50, adventureState.foeType);
+  
+  // Particles
+  adventureState.particles.forEach(p => {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life / 30;
+    ctx.fillRect(p.x, p.y, 6, 6);
+  });
+  ctx.globalAlpha = 1;
+}
+
+function updateAdventure() {
+  if (!adventureState) return;
+  
+  // Animate jump
+  if (adventureState.heroJumping) {
+    adventureState.heroJumpY += adventureState.heroJumpVel;
+    adventureState.heroJumpVel -= 1.2;
+    if (adventureState.heroJumpY <= 0) {
+      adventureState.heroJumpY = 0;
+      adventureState.heroJumping = false;
+    }
+  }
+  
+  // Update particles
+  adventureState.particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.3;
+    p.life--;
+  });
+  adventureState.particles = adventureState.particles.filter(p => p.life > 0);
+}
+
+function adventureCorrect() {
+  // Hero jumps and shoots energy at foe
+  adventureState.heroJumping = true;
+  adventureState.heroJumpVel = 12;
+  adventureState.heroJumpY = 0.1;
+  jumpSound();
+  
+  setTimeout(() => {
+    // Particles at foe
+    for (let i = 0; i < 15; i++) {
+      adventureState.particles.push({
+        x: adventureState.foeX + 25, y: 370,
+        vx: (Math.random() - 0.5) * 8,
+        vy: -Math.random() * 8 - 2,
+        life: 30,
+        color: ['#FFE45E', '#F72585', '#4CC9F0'][Math.floor(Math.random()*3)]
+      });
+    }
+    
+    adventureState.foesDefeated++;
+    if (adventureState.foesDefeated >= adventureState.targetFoes) {
+      // WIN!
+      gameActive = false;
+      victorySound();
+      setTimeout(() => showVictory(`You defeated all ${adventureState.targetFoes} foes!`, '🦸 HERO ELIJAH! 🦸'), 800);
+      return;
+    }
+    // New foe slides in
+    adventureState.foeX = 850;
+    adventureState.foeType = (adventureState.foeType + 1) % 3;
+    const slideIn = setInterval(() => {
+      adventureState.foeX -= 15;
+      if (adventureState.foeX <= 700) {
+        adventureState.foeX = 700;
+        clearInterval(slideIn);
+      }
+    }, 30);
+  }, 400);
+}
+
+function adventureWrong() {
+  // Foe wiggles, hero stays put
+  // Just play sound, no penalty
+}
+
+// ============================================================
+// GAME MODE: BUILDER (Build Mode)
+// Each correct answer adds a block to the tower
+// ============================================================
+function initBuilder() {
+  builderState = {
+    blocks: [],  // each block: { color, type, x, y }
+    targetBlocks: 10,
+    pendingBlock: null
+  };
+}
+
+function drawBuilder(ctx) {
+  const W = 800, H = 450;
+  // Sunset sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#F72585');
+  sky.addColorStop(0.5, '#F4A261');
+  sky.addColorStop(0.8, '#FFE45E');
+  sky.addColorStop(1, '#06D6A0');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Sun
+  ctx.fillStyle = 'rgba(255, 228, 94, 0.7)';
+  ctx.beginPath();
+  ctx.arc(650, 120, 50, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFE45E';
+  ctx.beginPath();
+  ctx.arc(650, 120, 35, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Ground
+  for (let x = 0; x < W; x += 40) {
+    ctx.fillStyle = '#7A5230';
+    ctx.fillRect(x, H - 50, 40, 50);
+    ctx.fillStyle = '#5C3D24';
+    ctx.fillRect(x, H - 50, 40, 4);
+    ctx.strokeStyle = '#3D2817';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, H - 50, 40, 50);
+  }
+  
+  // Progress
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(20, 20, W - 40, 24);
+  ctx.fillStyle = '#FFE45E';
+  ctx.fillRect(22, 22, (W - 44) * (builderState.blocks.length / builderState.targetBlocks), 20);
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Tower: ${builderState.blocks.length}/${builderState.targetBlocks}`, W/2, 38);
+  
+  // Hero on left
+  drawHero(ctx, 80, H - 50 - 60);
+  
+  // Tower (blocks)
+  const towerX = 380;
+  const blockSize = 50;
+  builderState.blocks.forEach((block, i) => {
+    const y = H - 50 - (i + 1) * blockSize + (block.dropY || 0);
+    drawBlock(ctx, towerX, y, blockSize, block.color, block.pattern);
+  });
+  
+  // Pending block falling in
+  if (builderState.pendingBlock) {
+    const p = builderState.pendingBlock;
+    drawBlock(ctx, towerX, p.y, blockSize, p.color, p.pattern);
+  }
+  
+  // Cloud platform on top after winning
+  if (builderState.blocks.length >= builderState.targetBlocks) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    const topY = H - 50 - builderState.blocks.length * blockSize - 30;
+    ctx.fillRect(towerX - 20, topY, 90, 18);
+    ctx.fillRect(towerX - 10, topY - 12, 70, 14);
+  }
+}
+
+function drawBlock(ctx, x, y, size, color, pattern) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, size, size);
+  // Highlight
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.fillRect(x, y, size, 4);
+  ctx.fillRect(x, y, 4, size);
+  // Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.fillRect(x + size - 4, y, 4, size);
+  ctx.fillRect(x, y + size - 4, size, 4);
+  // Pattern dots
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  if (pattern === 'dot') {
+    ctx.fillRect(x + 12, y + 12, 6, 6);
+    ctx.fillRect(x + 32, y + 32, 6, 6);
+  } else if (pattern === 'stripe') {
+    ctx.fillRect(x + 8, y + 22, size - 16, 6);
+  } else if (pattern === 'cross') {
+    ctx.fillRect(x + 22, y + 8, 6, size - 16);
+    ctx.fillRect(x + 8, y + 22, size - 16, 6);
+  }
+  // Outline
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, size, size);
+}
+
+function updateBuilder() {
+  if (!builderState) return;
+  
+  if (builderState.pendingBlock) {
+    const p = builderState.pendingBlock;
+    p.y += 12;
+    const targetY = 400 - (builderState.blocks.length + 1) * 50;
+    if (p.y >= targetY) {
+      p.y = targetY;
+      builderState.blocks.push({ color: p.color, pattern: p.pattern });
+      builderState.pendingBlock = null;
+      popSound();
+      
+      if (builderState.blocks.length >= builderState.targetBlocks) {
+        gameActive = false;
+        victorySound();
+        setTimeout(() => showVictory(`You built a ${builderState.targetBlocks}-block tower!`, '🏗️ MASTER BUILDER! 🏗️'), 800);
+      }
+    }
+  }
+}
+
+function builderCorrect() {
+  const colors = ['#06D6A0', '#4CC9F0', '#F72585', '#FFE45E', '#F4A261', '#9D4EDD', '#E76F51'];
+  const patterns = ['dot', 'stripe', 'cross', null];
+  builderState.pendingBlock = {
+    y: -50,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    pattern: patterns[Math.floor(Math.random() * patterns.length)]
+  };
+}
+
+function builderWrong() {
+  // No penalty, just no block placed
+}
+
+// ============================================================
+// GAME MODE: RUNNER (Dash Mode)
+// Hero runs continuously; correct answers boost speed/jumps
+// ============================================================
+function initRunner() {
+  runnerState = {
+    heroY: 0,
+    heroVY: 0,
+    heroJumping: false,
+    distance: 0,
+    targetDistance: 1200,
+    bgOffset: 0,
+    obstacles: [],
+    coinSparkles: []
+  };
+}
+
+function drawRunner(ctx) {
+  const W = 800, H = 450;
+  const baseY = H - 80;
+  
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#9D4EDD');
+  sky.addColorStop(0.5, '#5A189A');
+  sky.addColorStop(1, '#3C096C');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Stars in background
+  ctx.fillStyle = '#FFE45E';
+  const starSeed = Math.floor(runnerState.bgOffset / 50);
+  for (let i = 0; i < 30; i++) {
+    const sx = ((i * 73 + starSeed * 17) % W);
+    const sy = ((i * 41) % 200) + 20;
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+  
+  // Distant cyber-buildings (parallax)
+  ctx.fillStyle = '#240046';
+  for (let i = 0; i < 8; i++) {
+    const x = ((i * 120 - runnerState.bgOffset * 0.3) % (W + 120)) - 100;
+    ctx.fillRect(x, 200, 80, 200);
+    // windows
+    ctx.fillStyle = '#FFE45E';
+    for (let wy = 220; wy < 380; wy += 20) {
+      for (let wx = 0; wx < 60; wx += 20) {
+        if ((wx + wy + i) % 3 !== 0) {
+          ctx.fillRect(x + 10 + wx, wy, 8, 8);
+        }
+      }
+    }
+    ctx.fillStyle = '#240046';
+  }
+  
+  // Closer track (parallax)
+  ctx.fillStyle = '#10002B';
+  ctx.fillRect(0, baseY, W, H - baseY);
+  
+  // Track lines (moving)
+  ctx.strokeStyle = '#F72585';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 12; i++) {
+    const x = ((i * 80 - runnerState.bgOffset) % (W + 80)) - 40;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY + 20);
+    ctx.lineTo(x + 30, baseY + 20);
+    ctx.stroke();
+  }
+  
+  // Glowing track edge
+  ctx.strokeStyle = '#FFE45E';
+  ctx.lineWidth = 4;
+  ctx.shadowColor = '#FFE45E';
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.moveTo(0, baseY);
+  ctx.lineTo(W, baseY);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  
+  // Progress
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(20, 20, W - 40, 24);
+  ctx.fillStyle = '#06D6A0';
+  ctx.fillRect(22, 22, (W - 44) * (runnerState.distance / runnerState.targetDistance), 20);
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Distance: ${Math.floor(runnerState.distance)}/${runnerState.targetDistance}`, W/2, 38);
+  
+  // Hero with running animation
+  drawHero(ctx, 100, baseY - 60 - runnerState.heroY, true);
+  
+  // Coin sparkles when correct
+  runnerState.coinSparkles.forEach(s => {
+    ctx.fillStyle = s.color;
+    ctx.globalAlpha = s.life / 40;
+    ctx.font = `${s.size}px sans-serif`;
+    ctx.fillText(s.text, s.x, s.y);
+  });
+  ctx.globalAlpha = 1;
+}
+
+function updateRunner() {
+  if (!runnerState) return;
+  
+  // Hero gravity
+  if (runnerState.heroJumping) {
+    runnerState.heroY += runnerState.heroVY;
+    runnerState.heroVY -= 1;
+    if (runnerState.heroY <= 0) {
+      runnerState.heroY = 0;
+      runnerState.heroJumping = false;
+    }
+  }
+  
+  // Continuous slow advance
+  runnerState.bgOffset += 1;
+  runnerState.distance += 0.4;
+  
+  if (runnerState.distance >= runnerState.targetDistance) {
+    gameActive = false;
+    victorySound();
+    setTimeout(() => showVictory(`You raced ${runnerState.targetDistance} meters!`, '⚡ SPEED HERO! ⚡'), 800);
+  }
+  
+  // Update sparkles
+  runnerState.coinSparkles.forEach(s => {
+    s.x += s.vx;
+    s.y += s.vy;
+    s.vy += 0.2;
+    s.life--;
+  });
+  runnerState.coinSparkles = runnerState.coinSparkles.filter(s => s.life > 0);
+}
+
+function runnerCorrect() {
+  runnerState.heroJumping = true;
+  runnerState.heroVY = 14;
+  runnerState.heroY = 0.1;
+  runnerState.distance += 100;
+  runnerState.bgOffset += 60;
+  jumpSound();
+  
+  // Sparkles
+  for (let i = 0; i < 8; i++) {
+    runnerState.coinSparkles.push({
+      x: 130, y: 350,
+      vx: (Math.random() - 0.5) * 6,
+      vy: -Math.random() * 6 - 3,
+      life: 40,
+      size: 18 + Math.random() * 8,
+      color: ['#FFE45E', '#FF6B9D', '#4CC9F0'][Math.floor(Math.random()*3)],
+      text: ['⭐', '✨', '💎'][Math.floor(Math.random()*3)]
+    });
+  }
+}
+
+function runnerWrong() {
+  // Tiny bump back
+  runnerState.distance = Math.max(0, runnerState.distance - 20);
+}
+
+// ============================================================
+// SHARED CHARACTER DRAWING - "Elijah the Word Hero"
+// Original superhero design (NO Mario/Avengers IP):
+//   - Reddish-blonde spiky hair
+//   - Blue/teal hero suit with lightning bolt symbol (original)
+//   - Yellow cape
+//   - Brown utility belt with star buckle
+// ============================================================
+function drawHero(ctx, x, y, running = false) {
+  const t = Date.now() / 100;
+  const bob = running ? Math.sin(t) * 2 : 0;
+  
+  // Cape (yellow with star) - flutters in wind
+  ctx.fillStyle = '#FFE45E';
+  ctx.beginPath();
+  ctx.moveTo(x + 4, y + 14);
+  ctx.lineTo(x - 8, y + 30);
+  ctx.lineTo(x - 6 + Math.sin(t/2) * 3, y + 50);
+  ctx.lineTo(x + 14, y + 38);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#F4A261';
+  ctx.beginPath();
+  ctx.moveTo(x + 4, y + 14);
+  ctx.lineTo(x + 14, y + 38);
+  ctx.lineTo(x + 4, y + 38);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Legs (with running animation)
+  ctx.fillStyle = '#118AB2';
+  const legSwing = running ? Math.sin(t) * 4 : 0;
+  ctx.fillRect(x + 6, y + 36, 8, 14 + legSwing);
+  ctx.fillRect(x + 18, y + 36, 8, 14 - legSwing);
+  
+  // Boots
+  ctx.fillStyle = '#FFE45E';
+  ctx.fillRect(x + 4, y + 48 + legSwing, 12, 4);
+  ctx.fillRect(x + 16, y + 48 - legSwing, 12, 4);
+  ctx.fillStyle = '#6A0DAD';
+  ctx.fillRect(x + 4, y + 51 + legSwing, 12, 1);
+  ctx.fillRect(x + 16, y + 51 - legSwing, 12, 1);
+  
+  // Body (teal hero suit with lightning bolt)
+  ctx.fillStyle = '#06D6A0';
+  ctx.fillRect(x + 4, y + 22 + bob, 24, 16);
+  
+  // Belt
+  ctx.fillStyle = '#6B4423';
+  ctx.fillRect(x + 4, y + 33 + bob, 24, 3);
+  // Star buckle
+  ctx.fillStyle = '#FFE45E';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('★', x + 16, y + 36 + bob);
+  
+  // Lightning bolt symbol on chest (ORIGINAL - not Avengers)
+  ctx.fillStyle = '#FFE45E';
+  ctx.beginPath();
+  ctx.moveTo(x + 14, y + 24 + bob);
+  ctx.lineTo(x + 18, y + 24 + bob);
+  ctx.lineTo(x + 16, y + 28 + bob);
+  ctx.lineTo(x + 19, y + 28 + bob);
+  ctx.lineTo(x + 14, y + 33 + bob);
+  ctx.lineTo(x + 16, y + 30 + bob);
+  ctx.lineTo(x + 13, y + 30 + bob);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Arms
+  ctx.fillStyle = '#FCD7B6';
+  ctx.fillRect(x, y + 24 + bob, 5, 10);
+  ctx.fillRect(x + 27, y + 24 + bob, 5, 10);
+  // Wristbands
+  ctx.fillStyle = '#FFE45E';
+  ctx.fillRect(x, y + 30 + bob, 5, 3);
+  ctx.fillRect(x + 27, y + 30 + bob, 5, 3);
+  
+  // Head (skin tone)
+  ctx.fillStyle = '#FCD7B6';
+  ctx.fillRect(x + 6, y + 6 + bob, 20, 18);
+  
+  // Hair - reddish-blonde spiky
+  ctx.fillStyle = '#D2691E';
+  ctx.fillRect(x + 5, y + 4 + bob, 22, 8);
+  ctx.beginPath();
+  ctx.moveTo(x + 6, y + 6 + bob); ctx.lineTo(x + 8, y + 0 + bob); ctx.lineTo(x + 10, y + 5 + bob); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + 10, y + 5 + bob); ctx.lineTo(x + 13, y + 0 + bob); ctx.lineTo(x + 15, y + 4 + bob); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + 14, y + 4 + bob); ctx.lineTo(x + 17, y + 0 + bob); ctx.lineTo(x + 20, y + 5 + bob); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + 19, y + 4 + bob); ctx.lineTo(x + 22, y + 1 + bob); ctx.lineTo(x + 25, y + 6 + bob); ctx.fill();
+  ctx.fillRect(x + 5, y + 10 + bob, 2, 4);
+  ctx.fillRect(x + 25, y + 10 + bob, 2, 4);
+  // Highlights
+  ctx.fillStyle = '#F4A460';
+  ctx.fillRect(x + 8, y + 5 + bob, 2, 3);
+  ctx.fillRect(x + 15, y + 4 + bob, 2, 3);
+  ctx.fillRect(x + 21, y + 5 + bob, 2, 3);
+  
+  // Mask (hero mask around eyes)
+  ctx.fillStyle = '#6A0DAD';
+  ctx.fillRect(x + 7, y + 12 + bob, 18, 5);
+  // Eye holes
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(x + 9, y + 13 + bob, 4, 3);
+  ctx.fillRect(x + 19, y + 13 + bob, 4, 3);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(x + 11, y + 14 + bob, 2, 2);
+  ctx.fillRect(x + 21, y + 14 + bob, 2, 2);
+  
+  // Determined smile
+  ctx.fillStyle = '#8B0000';
+  ctx.fillRect(x + 13, y + 20 + bob, 6, 2);
+  ctx.fillStyle = '#FFB6C1';
+  ctx.fillRect(x + 14, y + 21 + bob, 4, 1);
+}
+
+// Original cube-foes (NOT Minecraft IP - generic blocky monsters with original designs)
+function drawCubeFoe(ctx, x, y, type) {
+  const t = Date.now() / 200;
+  const bob = Math.sin(t) * 2;
+  
+  if (type === 0) {
+    // Purple cube-knight (NOT Creeper - original purple knight cube)
+    ctx.fillStyle = '#7B2CBF';
+    ctx.fillRect(x, y + bob, 50, 50);
+    // Helmet top
+    ctx.fillStyle = '#560BAD';
+    ctx.fillRect(x, y + bob, 50, 14);
+    // Eye visor
+    ctx.fillStyle = '#F72585';
+    ctx.fillRect(x + 8, y + 18 + bob, 10, 6);
+    ctx.fillRect(x + 32, y + 18 + bob, 10, 6);
+    // Mouth grumpy
+    ctx.fillStyle = '#240046';
+    ctx.fillRect(x + 15, y + 32 + bob, 20, 4);
+    ctx.fillStyle = '#F72585';
+    ctx.fillRect(x + 18, y + 35 + bob, 4, 2);
+    ctx.fillRect(x + 28, y + 35 + bob, 4, 2);
+    // Body lines
+    ctx.strokeStyle = '#560BAD';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y + bob, 50, 50);
+    // Studs
+    ctx.fillStyle = '#FFE45E';
+    ctx.fillRect(x + 4, y + 4 + bob, 4, 4);
+    ctx.fillRect(x + 42, y + 4 + bob, 4, 4);
+  } else if (type === 1) {
+    // Orange spike-bot (lava block)
+    ctx.fillStyle = '#E76F51';
+    ctx.fillRect(x, y + bob, 50, 50);
+    // Top spikes
+    ctx.fillStyle = '#F4A261';
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + i * 18 + 4, y + bob);
+      ctx.lineTo(x + i * 18 + 12, y - 8 + bob);
+      ctx.lineTo(x + i * 18 + 20, y + bob);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // Eyes
+    ctx.fillStyle = '#FFE45E';
+    ctx.fillRect(x + 10, y + 18 + bob, 8, 8);
+    ctx.fillRect(x + 32, y + 18 + bob, 8, 8);
+    ctx.fillStyle = '#240046';
+    ctx.fillRect(x + 13, y + 21 + bob, 3, 3);
+    ctx.fillRect(x + 35, y + 21 + bob, 3, 3);
+    // Angry brow
+    ctx.fillStyle = '#6B2D1A';
+    ctx.fillRect(x + 8, y + 16 + bob, 12, 2);
+    ctx.fillRect(x + 30, y + 16 + bob, 12, 2);
+    // Mouth
+    ctx.fillStyle = '#240046';
+    ctx.fillRect(x + 12, y + 32 + bob, 26, 6);
+    // Teeth
+    ctx.fillStyle = '#FFE45E';
+    ctx.fillRect(x + 14, y + 32 + bob, 3, 4);
+    ctx.fillRect(x + 20, y + 32 + bob, 3, 4);
+    ctx.fillRect(x + 26, y + 32 + bob, 3, 4);
+    ctx.fillRect(x + 32, y + 32 + bob, 3, 4);
+    ctx.strokeStyle = '#9D2D1F';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y + bob, 50, 50);
+  } else {
+    // Pink slime-cube (gooey)
+    ctx.fillStyle = '#F72585';
+    ctx.fillRect(x, y + bob, 50, 50);
+    // Drips
+    ctx.beginPath();
+    ctx.arc(x + 10, y + 50 + bob, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 30, y + 52 + bob, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 45, y + 50 + bob, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Highlight
+    ctx.fillStyle = '#FF85B7';
+    ctx.fillRect(x + 4, y + 4 + bob, 16, 6);
+    ctx.fillRect(x + 4, y + 4 + bob, 4, 16);
+    // Eyes (cute big)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(x + 16, y + 24 + bob, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 34, y + 24 + bob, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#240046';
+    ctx.beginPath(); ctx.arc(x + 16, y + 25 + bob, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 34, y + 25 + bob, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(x + 17, y + 24 + bob, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 35, y + 24 + bob, 1, 0, Math.PI * 2); ctx.fill();
+    // Smirk
+    ctx.strokeStyle = '#240046';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x + 25, y + 36 + bob, 4, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    ctx.strokeStyle = '#C71585';
+    ctx.strokeRect(x, y + bob, 50, 50);
+  }
+}
+
+// ============================================================
+// MODE-SPECIFIC HOOKS (called by handleAnswer)
+// ============================================================
+function onCorrectAnswer() {
+  if (currentMode === 'adventure') adventureCorrect();
+  else if (currentMode === 'builder') builderCorrect();
+  else if (currentMode === 'runner') runnerCorrect();
+}
+function onWrongAnswer() {
+  if (currentMode === 'adventure') adventureWrong();
+  else if (currentMode === 'builder') builderWrong();
+  else if (currentMode === 'runner') runnerWrong();
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function gameLoop() {
+  if (currentMode === 'adventure' && adventureState) {
+    updateAdventure();
+    drawAdventure(ctx);
+  } else if (currentMode === 'builder' && builderState) {
+    updateBuilder();
+    drawBuilder(ctx);
+  } else if (currentMode === 'runner' && runnerState) {
+    updateRunner();
+    drawRunner(ctx);
+  }
+  requestAnimationFrame(gameLoop);
+}
+gameLoop();
+
+// ============================================================
+// MENU / NAVIGATION
+// ============================================================
+function startGame(mode) {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  currentMode = mode;
+  gameActive = true;
+  
+  if (mode === 'adventure') initAdventure();
+  else if (mode === 'builder') initBuilder();
+  else if (mode === 'runner') initRunner();
+  
+  document.getElementById('menuScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  document.getElementById('victoryModal').classList.remove('show');
+  
+  newQuestion();
+}
+
+function restartGame() {
+  document.getElementById('victoryModal').classList.remove('show');
+  startGame(currentMode);
+}
+
+function goToMenu() {
+  gameActive = false;
+  currentMode = null;
+  document.getElementById('menuScreen').style.display = 'block';
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('victoryModal').classList.remove('show');
+}
+
+function showVictory(stats, title) {
+  document.getElementById('victoryTitle').textContent = title;
+  document.getElementById('victoryStats').innerHTML = stats + `<br><br>⭐ Stars: ${stars}<br>💎 Gems: ${gems}`;
+  document.getElementById('victoryModal').classList.add('show');
+  gameActive = false;
+}
+
+function openWordBook() {
+  const grid = document.getElementById('wordGrid');
+  grid.innerHTML = '';
+  SIGHT_WORDS.forEach(w => {
+    const chip = document.createElement('div');
+    chip.className = 'wordChip' + (progress[w] >= 5 ? ' mastered' : '');
+    chip.innerHTML = `${w}<span class="timesCount">${progress[w]}/5</span>`;
+    chip.onclick = () => {
+      currentWord = w;
+      speakCurrentWord();
+    };
+    grid.appendChild(chip);
+  });
+  document.getElementById('wordBookModal').classList.add('show');
+}
+
+function closeWordBook() {
+  document.getElementById('wordBookModal').classList.remove('show');
+}
+
+function resetProgress() {
+  if (confirm("Reset Elijah's progress? All stars and mastery will be lost.")) {
+    SIGHT_WORDS.forEach(w => progress[w] = 0);
+    stars = 0;
+    gems = 0;
+    updateStats();
+    saveProgress();
+    alert('Progress reset! Ready for a fresh start! 🌟');
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadProgress();
+</script>
+</body>
+</html>
